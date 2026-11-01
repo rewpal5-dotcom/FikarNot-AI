@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>FikarNot AI</title>
+<meta name="theme-color" content="#0a0a0f">
+<style>
+  :root{
+    --bg:#0a0a0f; --bg2:#0e0e16; --card:rgba(255,255,255,.055); --line:rgba(255,255,255,.10);
+    --ink:#f2f3f8; --muted:#9aa0b4; --purple:#8b5cf6; --purple2:#a855f7; --bubble:#6d28d9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
+    -webkit-user-select:none;user-select:none}
+  #app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+  /* ---------- header ---------- */
+  header{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:14px 16px 8px}
+  .menu{width:26px;display:flex;flex-direction:column;gap:5px;cursor:pointer}
+  .menu span{height:2.5px;background:var(--ink);border-radius:2px;opacity:.9}
+  .brand{font-size:21px;font-weight:800;letter-spacing:-.4px}
+  .brand b{color:var(--purple2)}
+  .hspacer{flex:1}
+  .hbtn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink);
+    background:transparent;border:0;cursor:pointer;font-size:18px}
+  .avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid var(--purple);
+    display:grid;place-items:center;background:#1b1b26;font-size:13px;font-weight:800}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+
+  /* ---------- views ---------- */
+  .view{flex:1;display:none;flex-direction:column;min-height:0}
+  .view.on{display:flex}
+
+  /* ---------- home ---------- */
+  #home{align-items:center;justify-content:flex-start;padding:6px 18px 0;overflow:auto}
+  .logoWrap{margin-top:min(9vh,70px);position:relative;width:150px;height:150px;display:grid;place-items:center}
+  .logoWrap img{width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 0 26px rgba(139,92,246,.65))}
+  .homeTitle{margin:14px 0 6px;font-size:33px;font-weight:800;letter-spacing:-1px;text-align:center}
+  .homeTitle b{color:var(--purple2)}
+  .tagline{color:var(--muted);font-size:14.5px;text-align:center;margin:0 0 4px}
+  .swirl{width:150px;height:16px;margin:2px 0 22px}
+  .swirl path{stroke:url(#g1);stroke-width:3;fill:none;stroke-linecap:round}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:420px}
+  .qcard{display:flex;align-items:center;gap:11px;padding:16px 14px;border:1px solid var(--line);
+    background:var(--card);border-radius:16px;cursor:pointer;transition:transform .12s}
+  .qcard:active{transform:scale(.97)}
+  .qcard .ic{width:26px;height:26px;flex:0 0 auto;display:grid;place-items:center;color:#cfd3e6}
+  .qcard .tx{font-size:14px;line-height:1.25;font-weight:600;color:#e8eaf3}
+
+  /* ---------- chat ---------- */
+  #chatView{min-height:0}
+  .chatHead{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .chatHead .mini{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(139,92,246,.6))}
+  .chatHead .ttl{font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:6px}
+  .chatHead .ttl b{color:var(--purple2)}
+  .chatHead .sub{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+  .verified{width:13px;height:13px;border-radius:50%;background:var(--purple2);display:inline-grid;place-items:center;
+    font-size:8px;color:#fff;font-weight:900}
+  #msgs{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px;min-height:0}
+  .msg{display:flex;gap:9px;max-width:88%}
+  .msg.me{align-self:flex-end;flex-direction:row-reverse}
+  .bubble{padding:12px 14px;border-radius:16px;font-size:14.2px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+  .msg.ai .bubble{background:#15151f;border:1px solid rgba(255,255,255,.07);border-top-left-radius:6px}
+  .msg.me .bubble{background:linear-gradient(135deg,#6d28d9,#8b5cf6);border-top-right-radius:6px}
+  .mAv{width:30px;height:30px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:#15151f;
+    border:1px solid rgba(139,92,246,.5);overflow:hidden}
+  .mAv img{width:22px;height:22px;object-fit:contain}
+  .meta{font-size:10px;color:var(--muted);margin-top:5px;text-align:right}
+  .typing{display:flex;gap:4px;padding:4px 2px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:#8b8fa3;display:block;animation:bl 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bl{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:6px 14px 4px}
+  .qb{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px;border-radius:14px;
+    border:1px solid var(--line);background:var(--card);color:#dfe2ee;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .qb svg{opacity:.9}
+
+  /* ---------- input bar ---------- */
+  .inputBar{flex:0 0 auto;display:flex;align-items:center;gap:9px;margin:8px 12px 10px;padding:8px 8px 8px 14px;
+    background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:26px}
+  .inputBar .plus{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
+    display:grid;place-items:center;color:#cfd3e6;font-size:16px;cursor:pointer;flex:0 0 auto;background:none}
+  .inputBar input{flex:1;background:none;border:0;outline:none;color:var(--ink);font-size:14.5px;font-family:inherit;min-width:0}
+  .inputBar input::placeholder{color:#7d8398}
+  .ibtn{width:34px;height:34px;border-radius:50%;border:0;background:none;color:#cfd3e6;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  .send{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;
+    display:grid;place-items:center;cursor:pointer;flex:0 0 auto;box-shadow:0 6px 18px rgba(139,92,246,.4)}
+
+  /* ---------- bottom nav ---------- */
+  nav{flex:0 0 auto;display:flex;border-top:1px solid rgba(255,255,255,.07);background:#0a0a0f;padding-bottom:env(safe-area-inset-bottom)}
+  .nv{flex:1;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8b90a4;
+    font-size:11px;font-weight:600;cursor:pointer;position:relative;background:none;border:0;font-family:inherit}
+  .nv.on{color:var(--purple2)}
+  .nv.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:52%;height:2.5px;
+    background:var(--purple2);border-radius:0 0 3px 3px}
+
+  /* ---------- history / settings ---------- */
+  .page{flex:1;overflow-y:auto;padding:14px 16px}
+  .page h2{margin:2px 0 12px;font-size:20px;letter-spacing:-.4px}
+  .row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);background:var(--card);
+    border-radius:14px;margin-bottom:9px;cursor:pointer}
+  .row .t{flex:1;min-width:0}
+  .row .t .n{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .t .d{font-size:11px;color:var(--muted);margin-top:2px}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;line-height:1.6}
+  .setRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;
+    border:1px solid var(--line);background:var(--card);border-radius:14px;margin-bottom:9px}
+  .setRow .n{font-size:13.5px;font-weight:700}
+  .setRow .d{font-size:11px;color:var(--muted);margin-top:2px}
+  .setRow input{background:#15151f;border:1px solid rgba(255,255,255,.1);color:var(--ink);border-radius:10px;
+    padding:8px 10px;font-size:12px;width:150px;font-family:inherit;outline:none}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;
+    font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn.primary{background:linear-gradient(135deg,#7c3aed,#a855f7);border:0;color:#fff}
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:rgba(30,30,45,.96);border:1px solid var(--line);color:#e9ebf5;padding:10px 16px;border-radius:12px;
+    font-size:12.5px;font-weight:600;z-index:60;transition:.22s;pointer-events:none;max-width:86vw;text-align:center}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== home ===== -->
+  <header id="homeHead">
+    <div class="menu" id="menuBtn"><span></span><span></span><span></span></div>
+    <div class="brand">FikarNot <b>AI</b></div>
+    <div class="hspacer"></div>
+    <button class="hbtn" id="histBtn" title="History"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></button>
+  </header>
+
+  <div class="view on" id="home">
+    <div class="logoWrap"><img id="bigLogo" alt="FikarNot AI"></div>
+    <div class="homeTitle">FikarNot <b>AI</b></div>
+    <p class="tagline">Ask anything... I'm here to help you!</p>
+    <svg class="swirl" viewBox="0 0 150 16"><defs><linearGradient id="g1" x1="0" x2="1">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0"/><stop offset=".5" stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+      <path d="M4 12 Q75 -6 146 12"/></svg>
+
+    <div class="cards">
+      <div class="qcard" data-prompt="Mujhe kuch aasan bhasha mein samjhao: ">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8 1 .8 1.7V16h5.6v-.5c0-.7.3-1.3.8-1.7A6 6 0 0 0 12 3z"/></svg></div><div class="tx">Explain<br>something</div>
+      </div>
+      <div class="qcard" data-prompt="Mere liye ek message likho: ">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div><div class="tx">Write a<br>message</div>
+      </div>
+      <div class="qcard" data-prompt="Mujhe ek image ka idea do: ">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></div><div class="tx">Create<br>an image</div>
+      </div>
+      <div class="qcard" data-prompt="Mujhe kuch naye ideas do: ">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></div><div class="tx">Give me<br>ideas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== chat ===== -->
+  <div class="view" id="chatView">
+    <div class="chatHead">
+      <img class="mini" id="chatLogo" alt="">
+      <div>
+        <div class="ttl">FikarNot <b>AI</b></div>
+        <div class="sub">Your AI Companion <span class="verified">✓</span></div>
+      </div>
+      <div class="hspacer"></div>
+      <button class="hbtn" id="chatSearch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      <div class="avatar" id="avatar">🙂</div>
+    </div>
+
+    <div id="msgs"></div>
+
+    <div class="quick">
+      <button class="qb" id="qPhoto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg><span>Photo</span></button>
+      <button class="qb" id="qCamera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/></svg><span>Camera</span></button>
+      <button class="qb" id="qVoice"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Voice</span></button>
+      <button class="qb" id="qImage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg><span>Generate<br>Image</span></button>
+    </div>
+
+    <div class="inputBar">
+      <button class="plus" id="plusBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+      <input id="chatInput" placeholder="Type a message..." autocomplete="off">
+      <button class="ibtn" id="attachBtn" title="Attach"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12.5 12.5 20a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7-7"/></svg></button>
+      <button class="ibtn" id="micBtn" title="Voice"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
+      <button class="send" id="sendBtn" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-7 16-2.5-6.5L4 12z"/></svg></button>
+    </div>
+  </div>
+
+  <!-- ===== history ===== -->
+  <div class="view" id="historyView">
+    <div class="page">
+      <h2>History</h2>
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <!-- ===== settings ===== -->
+  <div class="view" id="settingsView">
+    <div class="page">
+      <h2>Settings</h2>
+
+      <div class="setRow">
+        <div><div class="n">Aapka naam</div><div class="d">AI isi naam se bulayega</div></div>
+        <input id="setName" placeholder="Naam">
+      </div>
+
+      <div class="setRow">
+        <div><div class="n">AI mode</div><div class="d" id="modeDesc">Demo (bina key)</div></div>
+        <button class="btn" id="modeBtn">Badlein</button>
+      </div>
+
+      <div class="setRow" id="keyRow" style="display:none">
+        <div style="flex:1"><div class="n">Gemini API key</div><div class="d">aistudio.google.com se free</div></div>
+        <input id="setKey" placeholder="AIza..." type="password">
+      </div>
+
+      <div class="setRow">
+        <div><div class="n">Chat clear karein</div><div class="d">Saari baatein mit jayengi</div></div>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="setRow">
+        <div><div class="n">FikarNot AI</div><div class="d">v1.0 · offline shell + AI chat</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== bottom nav ===== -->
+  <nav>
+    <button class="nv on" data-view="home" id="navHome"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg><span id="navHomeLbl">Home</span></button>
+    <button class="nv" data-view="history" id="navHist"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span>History</span></button>
+    <button class="nv" data-view="settings" id="navSet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var LOGO = "logo.png";
+document.getElementById("bigLogo").src = LOGO;
+document.getElementById("chatLogo").src = LOGO;
+
+var $ = function(id){ return document.getElementById(id); };
+function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("on"); }, 2200); }
+
+/* ---------------- storage ---------------- */
+var K_CHAT="fikarnot_chat_v1", K_HIST="fikarnot_hist_v1", K_SET="fikarnot_set_v1";
+function load(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+var settings = load(K_SET, { name:"", mode:"demo", key:"" });
+var chat = load(K_CHAT, []);
+var history = load(K_HIST, []);
+
+/* ---------------- views ---------------- */
+function go(view){
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("on"); });
+  if (view === "chat") $("chatView").classList.add("on");
+  else if (view === "history"){ $("historyView").classList.add("on"); renderHistory(); }
+  else if (view === "settings"){ $("settingsView").classList.add("on"); syncSettings(); }
+  else $("home").classList.add("on");
+
+  $("homeHead").style.display = (view === "home") ? "flex" : "none";
+  $("navHomeLbl").textContent = (view === "chat") ? "Chat" : "Home";
+  document.querySelectorAll(".nv").forEach(function(b){
+    var v = b.getAttribute("data-view");
+    b.classList.toggle("on", v === view || (view === "chat" && v === "home"));
+  });
+}
+document.querySelectorAll(".nv").forEach(function(b){
+  b.addEventListener("click", function(){ go(b.getAttribute("data-view")); });
+});
+$("menuBtn").addEventListener("click", function(){ go("settings"); });
+$("histBtn").addEventListener("click", function(){ go("history"); });
+$("chatSearch").addEventListener("click", function(){ toast("Search jald aa raha hai"); });
+
+/* ---------------- chat ---------------- */
+function nowTime(){
+  var d = new Date();
+  return ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
+}
+
+function addMsg(role, text, image){
+  chat.push({ role:role, text:text, image:image||null, t: nowTime(), ts: Date.now() });
+  save(K_CHAT, chat);
+  renderMsgs();
+  var m = $("msgs"); m.scrollTop = m.scrollHeight;
+}
+
+function renderMsgs(){
+  var box = $("msgs");
+  box.innerHTML = "";
+  if (!chat.length){
+    box.innerHTML = '<div class="msg ai"><div class="mAv"><img src="'+LOGO+'"></div>' +
+      '<div><div class="bubble">Namaste! 🙏\nMain FikarNot AI hoon — aapki har tarah se madad ke liye yahan hoon.\nAap jo bhi poochna chahein, poochhiye!</div>' +
+      '<div class="meta">' + nowTime() + '</div></div></div>';
+    return;
+  }
+  chat.forEach(function(m){
+    var el = document.createElement("div");
+    el.className = "msg " + (m.role === "me" ? "me" : "ai");
+    var inner = "";
+    if (m.image) inner += '<img src="'+m.image+'" style="max-width:200px;border-radius:12px;display:block;margin-bottom:8px">';
+    inner += escapeHtml(m.text || "");
+    if (m.role === "me"){
+      el.innerHTML = '<div><div class="bubble">'+inner+'</div><div class="meta">'+m.t+' ✓✓</div></div>';
+    } else {
+      el.innerHTML = '<div class="mAv"><img src="'+LOGO+'"></div><div><div class="bubble">'+inner+'</div><div class="meta">'+m.t+'</div></div>';
+    }
+    box.appendChild(el);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c];
+  });
+}
+
+function typing(on){
+  var t = document.getElementById("typingRow");
+  if (on){
+    if (t) return;
+    var el = document.createElement("div");
+    el.id = "typingRow";
+    el.className = "msg ai";
+    el.innerHTML = '<div class="mAv"><img src="'+LOGO+'"></div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';
+    $("msgs").appendChild(el);
+    $("msgs").scrollTop = $("msgs").scrollHeight;
+  } else if (t) t.remove();
+}
+
+/* ---------------- AI ---------------- */
+var SYSTEM = "Tum FikarNot AI ho — ek friendly AI companion. Hinglish/Hindi/English mein jawab do, " +
+             "chhote aur kaam ke jawab do, line breaks aur simple points use karo. " +
+             "Kabhi mat bolo ki tum GPT ho.";
+
+function demoReply(text){
+  var t = (text||"").toLowerCase();
+  var name = settings.name ? (settings.name + ", ") : "";
+  if (/^(hi|hello|hey|namaste|hii|hlo)/.test(t))
+    return name + "Namaste! 🙏 Main FikarNot AI hoon. Bataiye, aaj kya karna hai — padhai, coding, likhna, ya kuch aur?";
+  if (t.indexOf("app") >= 0 || t.indexOf("android") >= 0)
+    return "Bilkul! Android app banane ke liye 3 cheezein chahiye:\n\n1. Android Studio (ya sirf Gradle + JDK)\n2. Ek idea — app kya karega\n3. Thoda sabr 🙂\n\nAap batayein — Chat App, Game, Study App ya kuch aur?";
+  if (t.indexOf("message") >= 0 || t.indexOf("likho") >= 0)
+    return "Ye lein ek simple message:\n\n\"Namaste! Umeed hai aap theek hain. Mujhe aapse ek zaroori baat karni hai — jab time mile, bata dijiye. Dhanyavaad!\"\n\nChhota, saaf aur polite. Chahein to main isse formal ya dosti wale tone mein badal doon?";
+  if (t.indexOf("idea") >= 0)
+    return "Kuch ideas:\n\n1. Roz 10 minute apni hobby ko do\n2. Ek chhota project jo 1 hafte mein poora ho\n3. Purani cheezon se naya kuch banayein\n4. Kisi dost ko uski favourite cheez surprise karein\n\nKaunsa idea try karna chahenge?";
+  if (t.indexOf("image") >= 0)
+    return "Image banane ke liye mujhe image-generation API chahiye (abhi demo mode hai).\n\nPar main aapko ek accha prompt likh sakta hoon, jaise:\n\"neon-lit Indian village at dusk, 3D render, soft glow, cinematic\"\n\nIse kisi image AI mein daal dein. 🙂";
+  if (t.indexOf("kaise") >= 0 || t.indexOf("how") >= 0)
+    return "Achha sawaal! Seedha tareeka:\n\n1. Pehle ek chhota lakshya tay karein\n2. Pehla step aaj hi lein (5 minute wala)\n3. Roz thoda-thoda karein\n4. Har hafte dekh lein ki kitna aage badhe\n\nBataiye kis cheez ke liye poocha — main usi hisaab se steps de doonga.";
+  return name + "Samajh gaya. Ye mera demo jawab hai — abhi AI key set nahi hai.\n\nSettings → AI mode → \"Gemini\" chun kar apni free API key daal dein, phir main poori tarah real AI ki tarah jawab dunga.\n\nAap chahein to main isi baat par thodi aur detail de doon?";
+}
+
+async function askAI(text){
+  if (settings.mode === "gemini" && settings.key){
+    try {
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(settings.key);
+      var res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM }] },
+          contents: [{ role: "user", parts: [{ text: text }] }]
+        })
+      });
+      var data = await res.json();
+      var out = data && data.candidates && data.candidates[0] && data.candidates[0].content &&
+                data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+      if (out) return out.trim();
+      return "AI se jawab nahi aaya. Key theek hai? (" + (data.error && data.error.message || "unknown error") + ")";
+    } catch(e){
+      return "Internet ya API problem: " + e.message + "\n\nDemo mode mein jawab de raha hoon:\n\n" + demoReply(text);
+    }
+  }
+  await new Promise(function(r){ setTimeout(r, 550 + Math.random()*450); });
+  return demoReply(text);
+}
+
+async function send(){
+  var inp = $("chatInput");
+  var text = inp.value.trim();
+  if (!text) return;
+  inp.value = "";
+  addMsg("me", text);
+  typing(true);
+  var reply = await askAI(text);
+  typing(false);
+  addMsg("ai", reply);
+  pushHistory(text);
+}
+
+function pushHistory(firstText){
+  if (!history.length || history[0].open !== true){
+    history.unshift({ title: firstText.slice(0,42), when: Date.now(), open: true });
+  } else {
+    history[0].when = Date.now();
+  }
+  history = history.slice(0, 30);
+  save(K_HIST, history);
+}
+
+$("sendBtn").addEventListener("click", send);
+$("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") send(); });
+
+/* quick cards on home */
+document.querySelectorAll(".qcard").forEach(function(c){
+  c.addEventListener("click", function(){
+    var p = c.getAttribute("data-prompt") || "";
+    go("chat");
+    $("chatInput").value = p;
+    $("chatInput").focus();
+  });
+});
+
+/* chat quick buttons */
+$("qPhoto").addEventListener("click", function(){ pickImage(); });
+$("qCamera").addEventListener("click", function(){ pickImage(true); });
+$("qVoice").addEventListener("click", function(){ voice(); });
+$("qImage").addEventListener("click", function(){
+  go("chat");
+  $("chatInput").value = "Mujhe ek image ka prompt likh do: ";
+  $("chatInput").focus();
+});
+$("plusBtn").addEventListener("click", function(){ pickImage(); });
+$("attachBtn").addEventListener("click", function(){ pickImage(); });
+$("micBtn").addEventListener("click", function(){ voice(); });
+
+/* image pick */
+function pickImage(camera){
+  var inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = "image/*";
+  if (camera) inp.capture = "environment";
+  inp.onchange = function(){
+    var f = inp.files && inp.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      go("chat");
+      addMsg("me", "Ye photo dekhiye", fr.result);
+      typing(true);
+      setTimeout(function(){
+        typing(false);
+        addMsg("ai", "Photo mil gayi! 📷\n\nAbhi demo mode mein main sirf text samajh sakta hoon. Gemini key daal dein to main photo ka content bhi padh kar jawab de sakunga.");
+      }, 900);
+    };
+    fr.readAsDataURL(f);
+  };
+  inp.click();
+}
+
+/* voice */
+function voice(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR){ toast("Is phone par voice input support nahi hai"); return; }
+  try {
+    var r = new SR();
+    r.lang = "hi-IN";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    toast("Bolna shuru karein…");
+    r.onresult = function(ev){
+      var txt = ev.results[0][0].transcript;
+      go("chat");
+      $("chatInput").value = txt;
+      toast("Sun liya: " + txt.slice(0, 30));
+    };
+    r.onerror = function(){ toast("Awaaz samajh nahi aayi, dobara try karein"); };
+    r.start();
+  } catch(e){ toast("Voice start nahi ho paya"); }
+}
+
+/* ---------------- history ---------------- */
+function renderHistory(){
+  var box = $("histList");
+  box.innerHTML = "";
+  if (!history.length){
+    box.innerHTML = '<div class="empty">Abhi koi chat nahi hai.<br>Home se koi sawaal pooch kar shuru karein.</div>';
+    return;
+  }
+  history.forEach(function(h){
+    var d = new Date(h.when);
+    var el = document.createElement("div");
+    el.className = "row";
+    el.innerHTML = '<div class="t"><div class="n">' + escapeHtml(h.title || "Chat") + '</div>' +
+      '<div class="d">' + d.getDate() + "/" + (d.getMonth()+1) + " · " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2) + '</div></div>' +
+      '<div style="color:#8b90a4">›</div>';
+    el.addEventListener("click", function(){ go("chat"); });
+    box.appendChild(el);
+  });
+}
+
+/* ---------------- settings ---------------- */
+function syncSettings(){
+  $("setName").value = settings.name || "";
+  $("modeDesc").textContent = settings.mode === "gemini" ? "Gemini (real AI)" : "Demo (bina key)";
+  $("modeBtn").textContent = settings.mode === "gemini" ? "Demo karein" : "Gemini lagayein";
+  $("keyRow").style.display = settings.mode === "gemini" ? "flex" : "none";
+  $("setKey").value = settings.key || "";
+  $("avatar").textContent = settings.name ? settings.name.trim().charAt(0).toUpperCase() : "🙂";
+}
+$("setName").addEventListener("input", function(){
+  settings.name = this.value.slice(0,20);
+  save(K_SET, settings);
+  $("avatar").textContent = settings.name ? settings.name.trim().charAt(0).toUpperCase() : "🙂";
+});
+$("modeBtn").addEventListener("click", function(){
+  settings.mode = settings.mode === "gemini" ? "demo" : "gemini";
+  save(K_SET, settings);
+  syncSettings();
+  toast(settings.mode === "gemini" ? "Gemini mode — ab API key daalein" : "Demo mode");
+});
+$("setKey").addEventListener("input", function(){
+  settings.key = this.value.trim();
+  save(K_SET, settings);
+});
+$("clearBtn").addEventListener("click", function(){
+  chat = []; history = [];
+  save(K_CHAT, chat); save(K_HIST, history);
+  renderMsgs();
+  toast("Chat clear ho gayi");
+});
+
+/* ---------------- boot ---------------- */
+renderMsgs();
+syncSettings();
+go("home");
+window.__fikar = { get chat(){ return chat; }, get settings(){ return settings; }, send: send, go: go };
+})();
+</script>
+</body>
+</html>
